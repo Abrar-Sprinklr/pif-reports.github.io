@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title> PIF Monthly Reports Archive</title>
+  <title>Monthly Reports Archive</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -45,10 +45,10 @@
   </style>
 </head>
 <body>
-  
+
 <header>
   <img src="images/logo.svg" alt="Client Logo">
-  <h1> PIF Monthly Reports Archive </h1>
+  <h1>Monthly Reports Archive</h1>
 </header>
 
 <main>
@@ -63,7 +63,6 @@
   const repo = "pif-reports.github.io";
   const folderPath = "reports";
 
-  // Month map with full names and abbreviations
   const monthMap = {
     Jan: 1, January: 1,
     Feb: 2, February: 2,
@@ -79,7 +78,6 @@
     Dec: 12, December: 12
   };
 
-  // Flexible date extractor looking from the end for month+year pair
   function extractDateFromFilename(filename) {
     const name = filename.replace('.docx', '');
     const parts = name.split('_');
@@ -91,7 +89,6 @@
       const yearNum = parseInt(yearStr);
       if (isNaN(yearNum)) continue;
 
-      // Normalize month string: capitalize first letter, lowercase rest
       const monthStr = monthStrRaw.charAt(0).toUpperCase() + monthStrRaw.slice(1).toLowerCase();
       const monthNum = monthMap[monthStr];
 
@@ -118,7 +115,6 @@
         return;
       }
 
-      // Sort descending by extracted date
       docxFiles.sort((a, b) => {
         const dateA = extractDateFromFilename(a.name);
         const dateB = extractDateFromFilename(b.name);
@@ -131,14 +127,30 @@
       reportList.innerHTML = "";
       docxFiles.forEach(file => {
         const li = document.createElement("li");
-        const link = document.createElement("a");
-        link.href = file.download_url;
-        link.target = "_blank";
 
-        // Create user-friendly title: replace underscores, remove extension
-        let title = file.name.replace(/_/g, " ").replace(".docx", "");
-        link.textContent = title;
-        li.appendChild(link);
+        // Title text
+        const titleText = document.createTextNode(file.name.replace(/_/g, " ").replace(".docx", "") + " — ");
+
+        // View link (Google Docs Viewer)
+        const viewLink = document.createElement("a");
+        viewLink.href = `https://docs.google.com/gview?url=${encodeURIComponent(file.download_url)}&embedded=true`;
+        viewLink.target = "_blank";
+        viewLink.textContent = "View";
+
+        // Separator
+        const separator = document.createTextNode(" | ");
+
+        // Download link (direct file)
+        const downloadLink = document.createElement("a");
+        downloadLink.href = file.download_url;
+        downloadLink.target = "_blank";
+        downloadLink.textContent = "Download";
+
+        li.appendChild(titleText);
+        li.appendChild(viewLink);
+        li.appendChild(separator);
+        li.appendChild(downloadLink);
+
         reportList.appendChild(li);
       });
     } catch (error) {
