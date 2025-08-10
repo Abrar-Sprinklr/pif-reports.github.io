@@ -77,3 +77,77 @@
     Nov: 11, November: 11,
     Dec: 12, December: 12
   };
+
+  // Flexible date extractor looking from the end for month+year pair
+  function extractDateFromFilename(filename) {
+    const name = filename.replace('.docx', '');
+    const parts = name.split('_');
+
+    for (let i = parts.length - 2; i >= 0; i--) {
+      const monthStrRaw = parts[i];
+      const yearStr = parts[i + 1];
+      if (!yearStr) continue;
+      const yearNum = parseInt(yearStr);
+      if (isNaN(yearNum)) continue;
+
+      // Normalize month string: capitalize first letter, lowercase rest
+      const monthStr = monthStrRaw.charAt(0).toUpperCase() + monthStrRaw.slice(1).toLowerCase();
+      const monthNum = monthMap[monthStr];
+
+      if (monthNum) {
+        return new Date(yearNum, monthNum - 1);
+      }
+    }
+    return null;
+  }
+
+  async function fetchReports() {
+    const reportList = document.getElementById("report-list");
+    reportList.innerHTML = "<li>Loading reports...</li>";
+
+    try {
+      const response = await fetch(`https://api.github.com/repos/${username}/${repo}/contents/${folderPath}`);
+      if (!response.ok) throw new Error("GitHub API request failed");
+
+      const files = await response.json();
+      const docxFiles = files.filter(file => file.name.toLowerCase().endsWith(".docx"));
+
+      if (docxFiles.length === 0) {
+        reportList.innerHTML = "<li>No reports found.</li>";
+        return;
+      }
+
+      // Sort descending by extracted date
+      docxFiles.sort((a, b) => {
+        const dateA = extractDateFromFilename(a.name);
+        const dateB = extractDateFromFilename(b.name);
+        if (!dateA && !dateB) return 0;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        return dateB - dateA;
+      });
+
+      reportList.innerHTML = "";
+      docxFiles.forEach(file => {
+        const li = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = file.download_url;
+        link.target = "_blank";
+
+        // Create user-friendly title: replace underscores, remove extension
+        let title = file.name.replace(/_/g, " ").replace(".docx", "");
+        link.textContent = title;
+        li.appendChild(link);
+        reportList.appendChild(li);
+      });
+    } catch (error) {
+      console.error(error);
+      reportList.innerHTML = "<li>Error loading reports. Please try again later.</li>";
+    }
+  }
+
+  fetchReports();
+</script>
+
+</body>
+</html>
